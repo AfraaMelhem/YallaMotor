@@ -1,0 +1,18 @@
+<?php
+
+
+namespace App\Services;
+
+use App\Repositories\Interfaces\{{interfaceName}};
+
+class {{serviceName}}
+{
+    protected ${{interfaceVar}};
+
+    public function __construct({{interfaceName}} ${{interfaceVar}})
+    {
+        $this->{{interfaceVar}} = ${{interfaceVar}};
+    }
+
+}
+
