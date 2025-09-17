@@ -41,6 +41,8 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'admin_api_key' => env('ADMIN_API_KEY'),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL
