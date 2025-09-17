@@ -35,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'admin.or.super-admin' => \App\Http\Middleware\AdminOrSuperAdminMiddleware::class,
+            'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
         ]);
         $middleware->group('api', [
             \App\Http\Middleware\SetLocale::class,
