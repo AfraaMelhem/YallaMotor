@@ -21,6 +21,14 @@ use App\Repositories\Eloquent\MediaRepository;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Repositories\Eloquent\UserRepository;
 use App\Repositories\Interfaces\MediaRepositoryInterface;
+
+// Car marketplace repositories
+use App\Repositories\Interfaces\DealerRepositoryInterface;
+use App\Repositories\Eloquent\DealerRepository;
+use App\Repositories\Interfaces\ListingRepositoryInterface;
+use App\Repositories\Eloquent\ListingRepository;
+use App\Repositories\Interfaces\ListingEventRepositoryInterface;
+use App\Repositories\Eloquent\ListingEventRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -40,6 +48,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(BaseRepositoryInterface::class, BaseRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(MediaRepositoryInterface::class, MediaRepository::class);
+
+        // Car marketplace bindings
+        $this->app->bind(DealerRepositoryInterface::class, DealerRepository::class);
+        $this->app->bind(ListingRepositoryInterface::class, ListingRepository::class);
+        $this->app->bind(ListingEventRepositoryInterface::class, ListingEventRepository::class);
         $this->app->singleton('firebase-notification', function ($app) {
             $projectId = config('firebase.project_id');
             $credentialsFilePath = config('firebase.credentials_file_path');
