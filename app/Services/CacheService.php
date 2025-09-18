@@ -143,8 +143,6 @@ class CacheService
 
     private function clearAllTagMappings(): void
     {
-        // This is a simplified approach - in production you'd want a more efficient method
-        // For Redis, you could use SCAN with pattern matching
         Log::info('Cache service: All tag mappings cleared via cache flush');
     }
 
@@ -178,7 +176,6 @@ class CacheService
     {
         $tags = $this->generateListingTags($listingId, $countryCode, $dealerId);
 
-        // Add general cache tags that should be invalidated when any listing changes
         $tags[] = 'cars_list';
         $tags[] = 'facets';
         $tags[] = 'statistics';
@@ -186,13 +183,5 @@ class CacheService
         return $this->flush($tags);
     }
 
-    public function invalidateDealerCaches(int $dealerId, ?string $countryCode = null): array
-    {
-        $tags = $this->generateDealerTags($dealerId, $countryCode);
 
-        // Add general cache tags
-        $tags[] = 'dealers_list';
-
-        return $this->flush($tags);
-    }
 }

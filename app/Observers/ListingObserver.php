@@ -87,15 +87,6 @@ class ListingObserver
         ]);
     }
 
-    public function forceDeleted(Listing $listing): void
-    {
-        // Clear related caches
-        $this->clearListingCaches($listing);
-
-        Log::info('Listing force deleted', [
-            'listing_id' => $listing->id
-        ]);
-    }
 
     private function clearListingCaches(Listing $listing): void
     {

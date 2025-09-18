@@ -21,8 +21,7 @@ class LeadsApiTest extends TestCase
         // Create test data
         $dealer = Dealer::factory()->create([
             'name' => 'Test Dealer',
-            'country_code' => 'US',
-            'city' => 'New York'
+            'country_code' => 'US'
         ]);
 
         $this->listing = Listing::factory()->create([

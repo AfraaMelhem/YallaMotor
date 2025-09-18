@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Repositories\Interfaces\DealerRepositoryInterface;
+use App\Services\CacheService;
 use Illuminate\Support\Facades\Cache;
 
 class DealerService
 {
     public function __construct(
-        protected DealerRepositoryInterface $dealerRepository
+        protected DealerRepositoryInterface $dealerRepository,
+        private CacheService $cacheService
     ) {}
 
     public function getPaginatedList(array $data = [], int $perPage = 15)
@@ -19,9 +21,22 @@ class DealerService
     public function show(int $id)
     {
         $cacheKey = "dealer:{$id}";
+        $tags = ["dealer:{$id}"];
 
-        return Cache::remember($cacheKey, 3600, function () use ($id) {
+        return $this->cacheService->remember($cacheKey, $tags, 3600, function () use ($id) {
             return $this->dealerRepository->show($id);
+        });
+    }
+
+    public function showWithRelations(int $id)
+    {
+        $cacheKey = "dealer_full:{$id}";
+        $tags = ["dealer:{$id}"];
+
+        return $this->cacheService->remember($cacheKey, $tags, 3600, function () use ($id) {
+            return $this->dealerRepository->show($id)->load(['listings' => function($query) {
+                $query->where('status', 'active')->orderBy('listed_at', 'desc')->limit(5);
+            }]);
         });
     }
 
@@ -31,7 +46,7 @@ class DealerService
 
         // Clear relevant caches
         Cache::forget("dealers_by_country:{$dealer->country_code}");
-        Cache::tags(['dealers'])->flush();
+        Cache::tags(['dealers', 'dealers_by_country', 'dealer_statistics'])->flush();
 
         return $dealer;
     }
@@ -42,8 +57,9 @@ class DealerService
 
         // Clear relevant caches
         Cache::forget("dealer:{$id}");
+        Cache::forget("dealer_full:{$id}");
         Cache::forget("dealers_by_country:{$dealer->country_code}");
-        Cache::tags(['dealers'])->flush();
+        Cache::tags(['dealers', 'dealers_by_country', 'dealer_statistics'])->flush();
 
         return $dealer;
     }
@@ -55,8 +71,9 @@ class DealerService
 
         // Clear relevant caches
         Cache::forget("dealer:{$id}");
+        Cache::forget("dealer_full:{$id}");
         Cache::forget("dealers_by_country:{$dealer->country_code}");
-        Cache::tags(['dealers'])->flush();
+        Cache::tags(['dealers', 'dealers_by_country', 'dealer_statistics'])->flush();
 
         return $result;
     }
@@ -64,8 +81,9 @@ class DealerService
     public function getDealersByCountry(string $countryCode)
     {
         $cacheKey = "dealers_by_country:{$countryCode}";
+        $tags = ['dealers_by_country', "country:{$countryCode}"];
 
-        return Cache::remember($cacheKey, 1800, function () use ($countryCode) {
+        return $this->cacheService->remember($cacheKey, $tags, 1800, function () use ($countryCode) {
             return $this->dealerRepository->findByCountryCode($countryCode);
         });
     }
@@ -73,8 +91,9 @@ class DealerService
     public function getDealerStatistics(array $data = []): array
     {
         $cacheKey = 'dealer_statistics:' . md5(serialize($data));
+        $tags = ['dealer_statistics'];
 
-        return Cache::remember($cacheKey, 3600, function () use ($data) {
+        return $this->cacheService->remember($cacheKey, $tags, 3600, function () use ($data) {
             return [
                 'total_dealers' => $this->dealerRepository->list($data)->count(),
                 'dealers_by_country' => $this->dealerRepository->list($data)

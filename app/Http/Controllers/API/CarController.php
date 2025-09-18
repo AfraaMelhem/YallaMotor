@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CarFilterRequest;
 use App\Http\Resources\BaseResource;
 use App\Services\CarService;
 use App\Traits\BaseResponse;
@@ -19,28 +18,21 @@ class CarController extends Controller
         protected CarService $carService
     ) {}
 
-    public function index(CarFilterRequest $request): JsonResponse
+    public function getPaginatedList(Request $request): JsonResponse
     {
         $startTime = microtime(true);
 
         try {
-            // Prepare data using the command pattern
-            $data = [
-                'filters' => $request->validated(),
-                'sort' => [
-                    $request->validated('sort_by', 'listed_at') => $request->validated('sort_direction', 'desc')
-                ]
-            ];
-
-            $perPage = $request->validated('per_page', 20);
-            $includeFacets = $request->validated('include_facets', false);
+            $data = $this->prepareListData($request);
+            $perPage = min($request->get('per_page', 20), 50);
+            $includeFacets = $request->boolean('include_facets', false);
 
             $result = $this->carService->getFilteredCars($data, $perPage, $includeFacets);
 
             $queryTime = round((microtime(true) - $startTime) * 1000, 2);
 
             // Generate ETag for cache validation
-            $etag = md5(serialize($result['cars']->items()) . $result['cars']->total());
+            $etag = md5(serialize($result['cars']->items()) . $result['cars']->total() . serialize($data));
 
             // Check If-None-Match header for 304 response
             if ($request->header('If-None-Match') === $etag) {
@@ -52,19 +44,30 @@ class CarController extends Controller
                     ->header('X-Query-Time-ms', $queryTime);
             }
 
+            $responseData = [
+                'data' => BaseResource::collection($result['cars'])->resolve(),
+                'meta' => [
+                    'pagination' => [
+                        'current_page' => $result['cars']->currentPage(),
+                        'per_page' => $result['cars']->perPage(),
+                        'total' => $result['cars']->total(),
+                        'last_page' => $result['cars']->lastPage(),
+                        'from' => $result['cars']->firstItem(),
+                        'to' => $result['cars']->lastItem(),
+                    ],
+                    'filters_applied' => $data['filters'],
+                    'query_time_ms' => $queryTime,
+                ]
+            ];
+
+            // Add facets if requested
+            if ($includeFacets && $result['facets']) {
+                $responseData['facets'] = $result['facets'];
+            }
+
             $response = $this->successResponse(
                 'Cars retrieved successfully',
-                BaseResource::collection($result['cars'])->additional([
-                    'meta' => [
-                        'filters_applied' => $request->validated(),
-                        'total_results' => $result['cars']->total(),
-                        'page' => $result['cars']->currentPage(),
-                        'per_page' => $result['cars']->perPage(),
-                        'last_page' => $result['cars']->lastPage(),
-                        'query_time_ms' => $queryTime,
-                    ],
-                    'facets' => $includeFacets ? $result['facets'] : null,
-                ]),
+                $responseData,
                 200,
                 $request
             );
@@ -92,7 +95,7 @@ class CarController extends Controller
         $startTime = microtime(true);
 
         try {
-            $car = $this->carService->show($id);
+            $car = $this->carService->showWithRelations($id);
 
             // Generate ETag for cache validation
             $etag = md5(serialize($car->toArray()));
@@ -103,7 +106,7 @@ class CarController extends Controller
                     ->header('Cache-Control', 'public, max-age=600')
                     ->header('ETag', $etag)
                     ->header('X-Cache', 'HIT-304')
-                    ->header('X-Cache-Key', "car:{$id}")
+                    ->header('X-Cache-Key', "car_full:{$id}")
                     ->header('X-Query-Time-ms', round((microtime(true) - $startTime) * 1000, 2));
             }
 
@@ -111,12 +114,7 @@ class CarController extends Controller
 
             $response = $this->successResponse(
                 'Car retrieved successfully',
-                new BaseResource($car->load([
-                    'dealer',
-                    'events' => function($query) {
-                        $query->orderBy('created_at', 'desc')->limit(5);
-                    }
-                ]))
+                new BaseResource($car)
             );
 
             // Add CDN and observability headers
@@ -124,8 +122,8 @@ class CarController extends Controller
                 ->header('Cache-Control', 'public, max-age=600, s-maxage=600')
                 ->header('ETag', $etag)
                 ->header('Vary', 'Accept, Accept-Encoding')
-                ->header('X-Cache', cache()->has("car:{$id}") ? 'HIT' : 'MISS')
-                ->header('X-Cache-Key', "car:{$id}")
+                ->header('X-Cache', cache()->has("car_full:{$id}") ? 'HIT' : 'MISS')
+                ->header('X-Cache-Key', "car_full:{$id}")
                 ->header('X-Query-Time-ms', $queryTime)
                 ->header('X-API-Version', 'v1');
 
@@ -136,48 +134,50 @@ class CarController extends Controller
         }
     }
 
-    public function testFilters(CarFilterRequest $request): JsonResponse
+    public function popularMakes(Request $request): JsonResponse
     {
-        $filters = $request->validated();
-
-        // Show what filters were received
-        $filterDebug = [
-            'received_filters' => $filters,
-            'available_filter_methods' => [],
-            'sql_query' => null,
-            'results_count' => 0,
-            'sample_results' => []
-        ];
-
-        // Check which filter methods exist on the Listing model
-        $listing = new \App\Models\Listing();
-        foreach ($filters as $key => $value) {
-            $method = 'filterBy' . ucfirst(str_replace('_', '', ucwords($key, '_')));
-            $filterDebug['available_filter_methods'][$key] = [
-                'method_name' => $method,
-                'exists' => method_exists($listing, $method),
-                'value' => $value
-            ];
-        }
+        $startTime = microtime(true);
 
         try {
-            // Test the actual filtering
-            $query = $this->carService->getFilteredCars(['filters' => $filters], 5, false);
-            $results = $query['cars'];
+            $countryCode = $request->get('country_code');
+            $popularMakes = $this->carService->getPopularMakes($countryCode);
 
-            $filterDebug['sql_query'] = $results->toSql();
-            $filterDebug['results_count'] = $results->total();
-            $filterDebug['sample_results'] = $results->items();
+            $queryTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        } catch (\Exception $e) {
-            $filterDebug['error'] = $e->getMessage();
+            // Generate ETag for cache validation
+            $etag = md5(serialize($popularMakes));
+            $cacheKey = "popular_makes" . ($countryCode ? ":{$countryCode}" : "");
+
+            // Check If-None-Match header for 304 response
+            if ($request->header('If-None-Match') === $etag) {
+                return response()->json(null, 304)
+                    ->header('Cache-Control', 'public, max-age=1800')
+                    ->header('ETag', $etag)
+                    ->header('X-Cache', 'HIT-304')
+                    ->header('X-Cache-Key', $cacheKey)
+                    ->header('X-Query-Time-ms', $queryTime);
+            }
+
+            $response = $this->successResponse(
+                'Popular makes retrieved successfully',
+                $popularMakes
+            );
+
+            // Add CDN and cache headers
+            return $response
+                ->header('Cache-Control', 'public, max-age=1800, s-maxage=1800')
+                ->header('ETag', $etag)
+                ->header('Vary', 'Accept, Accept-Encoding')
+                ->header('X-Cache', cache()->has($cacheKey) ? 'HIT' : 'MISS')
+                ->header('X-Cache-Key', $cacheKey)
+                ->header('X-Query-Time-ms', $queryTime)
+                ->header('X-API-Version', 'v1');
+
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to retrieve popular makes', 500)
+                ->header('X-Cache', 'MISS')
+                ->header('X-Query-Time-ms', round((microtime(true) - $startTime) * 1000, 2));
         }
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Filter test results',
-            'data' => $filterDebug
-        ]);
     }
 
 }

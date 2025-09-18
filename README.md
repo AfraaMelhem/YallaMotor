@@ -73,18 +73,20 @@ GET /api/v1/cars
 **Query Parameters:**
 - `make` - Filter by car make
 - `model` - Filter by car model
-- `min_year`, `max_year` - Year range
-- `min_price`, `max_price` - Price range (in cents)
-- `country` - Filter by country code
+- `year_min`, `year_max` - Year range
+- `price_min_cents`, `price_max_cents` - Price range (in cents)
+- `country_code` - Filter by country code
 - `city` - Filter by city
 - `dealer_id` - Filter by dealer
-- `per_page` - Results per page (default: 20)
+- `per_page` - Results per page (default: 15, max: 50)
 - `page` - Page number
 - `include_facets` - Include faceted counts (true/false)
+- `sort_by` - Sort field (listed_at, price_cents)
+- `sort_direction` - Sort direction (asc, desc)
 
 **Example Request:**
 ```bash
-curl "http://localhost:8000/api/v1/cars?make=Toyota&min_price=1000000&max_price=5000000&include_facets=true"
+curl "http://localhost:8000/api/v1/cars?make=Toyota&price_min_cents=1000000&price_max_cents=5000000&include_facets=true"
 ```
 
 **Response:**
@@ -147,16 +149,124 @@ POST /api/v1/leads
 }
 ```
 
-**Rate Limiting:** 5 requests per minute per IP
+**Rate Limiting:** 5 requests per hour per IP+email combination
 
-#### Get Lead Statistics
+### Listings API (Legacy/Admin)
+
+#### Get All Listings
 ```http
-GET /api/v1/leads
+GET /api/v1/listings
 ```
 
-#### Get Lead Details
+**Query Parameters:**
+- `filters` - JSON object with filter criteria
+- `search` - General search term
+- `sort` - JSON object with sort criteria
+- `per_page` - Results per page (default: 15, max: 50)
+- `page` - Page number
+
+#### Fast Browse Listings
 ```http
-GET /api/v1/leads/{id}
+GET /api/v1/listings/fast-browse
+```
+
+**Query Parameters:**
+- `make`, `model`, `year`, `price_cents` - Filter criteria
+- `sort_by` - Sort field (listed_at, price_cents, year)
+- `sort_direction` - Sort direction (asc, desc)
+- `per_page` - Results per page
+
+#### Popular Makes
+```http
+GET /api/v1/listings/popular-makes?country=US
+```
+
+#### Get Single Listing
+```http
+GET /api/v1/listings/{id}
+```
+
+#### Update Listing Price
+```http
+POST /api/v1/listings/{id}/price
+```
+
+**Request Body:**
+```json
+{
+  "price": 2500000
+}
+```
+
+#### Update Listing Status
+```http
+POST /api/v1/listings/{id}/status
+```
+
+**Request Body:**
+```json
+{
+  "status": "sold"
+}
+```
+
+### Dealers API
+
+#### Get All Dealers
+```http
+GET /api/v1/dealers
+```
+
+**Query Parameters:**
+- `filters` - JSON object with filter criteria
+- `search` - General search term
+- `per_page` - Results per page (default: 15, max: 50)
+- `page` - Page number
+
+#### Get Single Dealer
+```http
+GET /api/v1/dealers/{id}
+```
+
+#### Create Dealer
+```http
+POST /api/v1/dealers
+```
+
+**Request Body:**
+```json
+{
+  "name": "ABC Motors",
+  "country_code": "US"
+}
+```
+
+#### Update Dealer
+```http
+POST /api/v1/dealers/{id}
+```
+
+**Request Body:**
+```json
+{
+  "name": "ABC Motors Updated",
+  "country_code": "US"
+}
+```
+
+#### Delete Dealer
+```http
+DELETE /api/v1/dealers/{id}
+```
+
+#### Get Dealers by Country
+```http
+GET /api/v1/dealers/country/{countryCode}
+```
+
+**Example:**
+```bash
+curl "http://localhost:8000/api/v1/dealers/country/US"
 ```
 
 ### Admin API

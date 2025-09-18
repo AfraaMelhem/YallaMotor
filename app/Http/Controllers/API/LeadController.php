@@ -8,6 +8,7 @@ use App\Http\Resources\BaseResource;
 use App\Jobs\ScoreLeadJob;
 use App\Models\Lead;
 use App\Services\LeadScoringService;
+use App\Services\LeadService;
 use App\Traits\BaseResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,8 @@ class LeadController extends Controller
     use BaseResponse;
 
     public function __construct(
-        protected LeadScoringService $scoringService
+        protected LeadScoringService $scoringService,
+        protected LeadService $leadService
     ) {}
 
     public function store(CreateLeadRequest $request): JsonResponse
@@ -27,7 +29,7 @@ class LeadController extends Controller
 
         try {
             // Create the lead with validated data
-            $lead = Lead::create($request->validated());
+            $lead = $this->leadService->create($request->validated());
 
             Log::info('Lead created', [
                 'lead_id' => $lead->id,
@@ -70,7 +72,7 @@ class LeadController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $statistics = $this->scoringService->getLeadStatistics();
+            $statistics = $this->leadService->getLeadStatistics();
 
             return $this->successResponse(
                 'Lead statistics retrieved successfully',
@@ -84,7 +86,7 @@ class LeadController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $lead = Lead::with(['listing.dealer'])->findOrFail($id);
+            $lead = $this->leadService->showWithRelations($id);
 
             return $this->successResponse(
                 'Lead retrieved successfully',

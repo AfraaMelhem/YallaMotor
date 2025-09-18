@@ -26,13 +26,6 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'email', 'unique:users,email'],
             'phone' => ['required', 'string', 'max:20'],
             'password' => ['required', 'string', 'min:6'],
-            'birth_date' => ['nullable', 'date'],
-            'gender' => ['nullable', 'in:male,female,other'],
-            'check_in_date' => ['required'],
-            'check_out_date' => ['required'],
-            'actual_check_out_date' => ['nullable'],
-            'stay_duration_days' => ['nullable', 'integer'],
-            'language' => ['nullable', 'string'],
         ];
     }
 }

@@ -44,25 +44,7 @@ class BaseResource extends JsonResource
                 }
             }
         }
-        if ($this->relationLoaded('watchable') && $this->watchable) {
-            $data['watchable'] = new BaseResource($this->watchable);
-        }
 
-        if ($this->relationLoaded('media')) {
-            $data['media'] = $this->media->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'filename' => $media->filename,
-                    'mime_type' => $media->mime_type,
-                    'file_path' => $media->file_path,
-                    'url' => $this->formatImageUrl($media->file_path),
-                    'description' => $media->description,
-                    'order' => $media->order,
-                    'created_at' => $media->created_at,
-                    'updated_at' => $media->updated_at,
-                ];
-            })->toArray();
-        }
 
         // Enhanced car marketplace specific fields
         if (isset($this->resource) && $this->resource instanceof \App\Models\Listing) {

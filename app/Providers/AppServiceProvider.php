@@ -39,15 +39,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
 
-        $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
-
-        $this->app->bind(AdminRepositoryInterface::class, AdminRepository::class);
-
-        $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
-        $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(BaseRepositoryInterface::class, BaseRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
-        $this->app->bind(MediaRepositoryInterface::class, MediaRepository::class);
 
         // Car marketplace bindings
         $this->app->bind(DealerRepositoryInterface::class, DealerRepository::class);
@@ -58,12 +51,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\CacheService::class);
         $this->app->bind(\App\Services\CarService::class);
         $this->app->bind(\App\Services\LeadScoringService::class);
-        $this->app->singleton('firebase-notification', function ($app) {
-            $projectId = config('firebase.project_id');
-            $credentialsFilePath = config('firebase.credentials_file_path');
-            AccessToken::initialize($credentialsFilePath, $projectId);
-            return new FirebaseNotification($projectId, $credentialsFilePath);
-        });
+
     }
 
     public function boot(): void

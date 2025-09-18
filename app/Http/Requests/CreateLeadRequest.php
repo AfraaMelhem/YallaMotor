@@ -99,23 +99,12 @@ class CreateLeadRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            // Check for duplicate leads in the last 24 hours
-            if ($this->has('email') && $this->has('listing_id')) {
-                $existingLead = \App\Models\Lead::where('email', $this->input('email'))
-                    ->where('listing_id', $this->input('listing_id'))
-                    ->where('created_at', '>=', now()->subDay())
-                    ->first();
-
-                if ($existingLead) {
-                    $validator->errors()->add('email', 'You have already submitted a lead for this listing today.');
-                }
-            }
 
             // Validate listing is active
             if ($this->has('listing_id')) {
                 $listing = \App\Models\Listing::find($this->input('listing_id'));
                 if ($listing && $listing->status !== 'active') {
-                    $validator->errors()->add('listing_id', 'This listing is no longer available for leads.');
+                $validator->errors()->add('listing_id', 'This listing is no longer available for leads.');
                 }
             }
         });

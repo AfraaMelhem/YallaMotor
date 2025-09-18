@@ -12,19 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         then: function () {
-            Route::middleware('api')
-                ->prefix('api/v1/auth')
-                ->group(base_path('routes/v1/auth.php'));
 
-            Route::middleware('api')
-                ->prefix('api/v1')
-                ->group(base_path('routes/v1/rbac.php'));
-            Route::middleware('api')
-                ->prefix('api/v1/admin')
-                ->group(base_path('routes/v1/admin.php'));
-                Route::middleware('api')
-                ->prefix('api/v1/user')
-                ->group(base_path('routes/v1/user.php'));
+
+//                Route::middleware('api')
+//                ->prefix('api/v1/user')
+//                ->group(base_path('routes/v1/user.php'));
 
         },
 
@@ -34,7 +26,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-            'admin.or.super-admin' => \App\Http\Middleware\AdminOrSuperAdminMiddleware::class,
             'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
         ]);
         $middleware->group('api', [
