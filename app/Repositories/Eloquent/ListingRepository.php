@@ -41,75 +41,53 @@ class ListingRepository extends BaseRepository implements ListingRepositoryInter
 
     public function getFastBrowseData(array $filters = []): Builder
     {
+        // Start with active listings and eager load dealer relationship
         $query = $this->model->active()->with('dealer');
 
-        if (!empty($filters['country_code'])) {
-            $query->byCountry($filters['country_code']);
-        }
-
-        if (!empty($filters['make'])) {
-            $query->byMake($filters['make']);
-        }
-
-        if (!empty($filters['model'])) {
-            $query->byModel($filters['model']);
-        }
-
-        if (!empty($filters['min_price']) || !empty($filters['max_price'])) {
-            $query->priceRange($filters['min_price'] ?? null, $filters['max_price'] ?? null);
-        }
-
-        if (!empty($filters['min_year']) || !empty($filters['max_year'])) {
-            $query->yearRange($filters['min_year'] ?? null, $filters['max_year'] ?? null);
-        }
-
-        if (!empty($filters['city'])) {
-            $query->where('city', 'like', '%' . $filters['city'] . '%');
-        }
-
-        $sortBy = $filters['sort_by'] ?? 'listed_at';
-        $sortDirection = $filters['sort_direction'] ?? 'desc';
-
-        switch ($sortBy) {
-            case 'price':
-                $query->orderBy('price_cents', $sortDirection);
-                break;
-            case 'year':
-                $query->orderBy('year', $sortDirection);
-                break;
-            case 'mileage':
-                $query->orderBy('mileage_km', $sortDirection);
-                break;
-            default:
-                $query->orderBy('listed_at', $sortDirection);
+        // Use the Filterable trait for filtering
+        if (!empty($filters)) {
+            $query = $this->applyFilters($query, $filters);
         }
 
         return $query;
     }
 
-    public function updatePrice(int $id, int $newPriceCents): mixed
+    public function updateWithFilters(array $filters, array $data): mixed
     {
-        $listing = $this->show($id);
-        $oldPrice = $listing->price_cents;
-
-        if ($oldPrice !== $newPriceCents) {
-            $listing->update(['price_cents' => $newPriceCents]);
-            ListingEvent::createPriceChangedEvent($id, $oldPrice, $newPriceCents);
-        }
-
-        return $listing->fresh();
+        $query = $this->getFastBrowseData($filters);
+        return $query->update($data);
     }
 
-    public function updateStatus(int $id, string $newStatus): mixed
+    public function getListingsByIds(array $ids): mixed
     {
-        $listing = $this->show($id);
-        $oldStatus = $listing->status;
+        return $this->model->whereIn('id', $ids)->with('dealer')->get();
+    }
 
-        if ($oldStatus !== $newStatus) {
-            $listing->update(['status' => $newStatus]);
-            ListingEvent::createStatusChangedEvent($id, $oldStatus, $newStatus);
-        }
+    public function getRecentListings(int $days = 7, int $limit = 10): mixed
+    {
+        return $this->model->active()
+            ->where('listed_at', '>=', now()->subDays($days))
+            ->with('dealer')
+            ->orderBy('listed_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
 
-        return $listing->fresh();
+    public function getSimilarListings(int $listingId, int $limit = 5): mixed
+    {
+        $listing = $this->show($listingId);
+
+        return $this->model->active()
+            ->where('id', '!=', $listingId)
+            ->where('make', $listing->make)
+            ->where('country_code', $listing->country_code)
+            ->whereBetween('price_cents', [
+                $listing->price_cents * 0.8,
+                $listing->price_cents * 1.2
+            ])
+            ->with('dealer')
+            ->orderBy('price_cents')
+            ->limit($limit)
+            ->get();
     }
 }

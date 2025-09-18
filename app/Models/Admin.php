@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notifiable;
 
 class Admin extends Authenticatable
 {
-    use HasApiTokens, Notifiable, HasRoles;
+    use Notifiable, HasRoles;
 
     protected $fillable = ['name', 'email', 'password', 'is_super_admin'];
 

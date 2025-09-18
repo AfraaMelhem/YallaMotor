@@ -18,7 +18,11 @@ interface ListingRepositoryInterface extends BaseRepositoryInterface
 
     public function getFastBrowseData(array $filters = []): Builder;
 
-    public function updatePrice(int $id, int $newPriceCents): mixed;
+    public function updateWithFilters(array $filters, array $data): mixed;
 
-    public function updateStatus(int $id, string $newStatus): mixed;
+    public function getListingsByIds(array $ids): mixed;
+
+    public function getRecentListings(int $days = 7, int $limit = 10): mixed;
+
+    public function getSimilarListings(int $listingId, int $limit = 5): mixed;
 }

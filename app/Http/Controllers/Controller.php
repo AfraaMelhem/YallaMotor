@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Traits\BaseResponse;
-use App\Traits\HasApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 

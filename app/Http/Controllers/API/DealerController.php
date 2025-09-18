@@ -3,28 +3,36 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreDealerRequest;
+use App\Http\Requests\UpdateDealerRequest;
+use App\Http\Resources\BaseResource;
 use App\Services\DealerService;
 use App\Traits\BaseResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Exception;
 
 class DealerController extends Controller
 {
     use BaseResponse;
 
     public function __construct(
-        private DealerService $dealerService
+        protected DealerService $dealerService
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function getPaginatedList(Request $request): JsonResponse
     {
         try {
+            $data = $this->prepareListData($request);
             $perPage = min($request->get('per_page', 15), 50);
-            $dealers = $this->dealerService->getAllDealers($perPage);
 
-            return $this->successResponse('Dealers retrieved successfully', $dealers);
-        } catch (\Exception $e) {
+            $dealers = $this->dealerService->getPaginatedList($data, $perPage);
+
+            return $this->successResponse(
+                'Dealers retrieved successfully',
+                BaseResource::collection($dealers)
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to retrieve dealers', 500);
         }
     }
@@ -32,50 +40,62 @@ class DealerController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $dealer = $this->dealerService->getDealerById($id);
-            return $this->successResponse('Dealer retrieved successfully', $dealer);
-        } catch (\Exception $e) {
+            $dealer = $this->dealerService->show($id);
+            return $this->successResponse(
+                'Dealer retrieved successfully',
+                new BaseResource($dealer->load(['listings' => function($query) {
+                    $query->where('status', 'active')->orderBy('listed_at', 'desc')->limit(5);
+                }]))
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Dealer not found', 404);
         }
     }
 
-    public function store(Request $request): JsonResponse
+    public function create(StoreDealerRequest $request): JsonResponse
     {
+        $data = $request->validated();
+
         try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'country_code' => 'required|string|size:2',
-            ]);
+            $dealer = $this->dealerService->create($data);
 
-            $dealer = $this->dealerService->createDealer($request->only(['name', 'country_code']));
-
-            return $this->successResponse('Dealer created successfully', $dealer, 201);
-        } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors());
-        } catch (\Exception $e) {
+            return $this->successResponse(
+                'Dealer created successfully',
+                new BaseResource($dealer),
+                201
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to create dealer', 500);
         }
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateDealerRequest $request, int $id): JsonResponse
     {
+        $data = $request->validated();
+
         try {
-            $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'country_code' => 'sometimes|string|size:2',
-            ]);
+            $dealer = $this->dealerService->update($id, $data);
 
-            $dealer = $this->dealerService->updateDealer($id, $request->only(['name', 'country_code']));
-
-            return $this->successResponse('Dealer updated successfully', $dealer);
-        } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors());
-        } catch (\Exception $e) {
+            return $this->successResponse(
+                'Dealer updated successfully',
+                new BaseResource($dealer)
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to update dealer', 500);
         }
     }
 
-    public function byCountry(Request $request, string $countryCode): JsonResponse
+    public function delete(int $id): JsonResponse
+    {
+        try {
+            $this->dealerService->delete($id);
+            return $this->successResponse('Dealer deleted successfully');
+        } catch (Exception $e) {
+            return $this->errorResponse('Failed to delete dealer', 500);
+        }
+    }
+
+    public function byCountry(string $countryCode): JsonResponse
     {
         try {
             if (strlen($countryCode) !== 2) {
@@ -84,8 +104,15 @@ class DealerController extends Controller
 
             $dealers = $this->dealerService->getDealersByCountry(strtoupper($countryCode));
 
-            return $this->successResponse('Dealers retrieved successfully', $dealers);
-        } catch (\Exception $e) {
+            return $this->successResponse(
+                'Dealers retrieved successfully',
+                [
+                    'country_code' => strtoupper($countryCode),
+                    'dealers' => BaseResource::collection($dealers),
+                    'total_dealers' => $dealers->count()
+                ]
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to retrieve dealers', 500);
         }
     }

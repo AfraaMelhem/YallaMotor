@@ -53,11 +53,45 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DealerRepositoryInterface::class, DealerRepository::class);
         $this->app->bind(ListingRepositoryInterface::class, ListingRepository::class);
         $this->app->bind(ListingEventRepositoryInterface::class, ListingEventRepository::class);
+
+        // Services
+        $this->app->singleton(\App\Services\CacheService::class);
+        $this->app->bind(\App\Services\CarService::class);
+        $this->app->bind(\App\Services\LeadScoringService::class);
         $this->app->singleton('firebase-notification', function ($app) {
             $projectId = config('firebase.project_id');
             $credentialsFilePath = config('firebase.credentials_file_path');
             AccessToken::initialize($credentialsFilePath, $projectId);
             return new FirebaseNotification($projectId, $credentialsFilePath);
+        });
+    }
+
+    public function boot(): void
+    {
+        // Register model observers
+        \App\Models\Listing::observe(\App\Observers\ListingObserver::class);
+
+        // Configure rate limiting
+        $this->configureRateLimiting();
+    }
+
+    private function configureRateLimiting(): void
+    {
+        \Illuminate\Support\Facades\RateLimiter::for('leads', function (\Illuminate\Http\Request $request) {
+            $email = $request->input('email', '');
+            $ip = $request->ip();
+            return \Illuminate\Cache\RateLimiting\Limit::perHour(5)
+                ->by("leads:{$ip}:{$email}")
+                ->response(function () {
+                    return response()->json([
+                        'message' => 'Too many lead submissions. Please try again later.',
+                        'error' => 'rate_limit_exceeded'
+                    ], 429);
+                });
+        });
+
+        \Illuminate\Support\Facades\RateLimiter::for('api', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by($request->ip());
         });
     }
 

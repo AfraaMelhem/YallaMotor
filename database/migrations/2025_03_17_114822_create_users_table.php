@@ -17,18 +17,6 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('password')->nullable();
-            $table->string('birth_date')->nullable();
-            $table->enum('gender', ['male', 'female'])->nullable();
-            $table->date('check_in_date');
-            $table->date('check_out_date');
-            $table->date('actual_check_out_date')->nullable();
-            $table->integer('stay_duration_days')->nullable();
-            $table->enum('language', ['en', 'ar'])->nullable();
-            $table->json('watch_history')->nullable();
-            $table->unsignedBigInteger('last_watched_video_id')->nullable();
-            $table->boolean('is_active')->default(false);
-            $table->boolean('is_vip')->default(false);
-            $table->string('qrcode_url')->nullable();
             $table->softDeletes();
             $table->rememberToken();
             $table->timestamps();

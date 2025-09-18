@@ -3,28 +3,37 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ListingFastBrowseRequest;
+use App\Http\Requests\UpdateListingPriceRequest;
+use App\Http\Requests\UpdateListingStatusRequest;
+use App\Http\Resources\BaseResource;
 use App\Services\ListingService;
 use App\Traits\BaseResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Exception;
 
 class ListingController extends Controller
 {
     use BaseResponse;
 
     public function __construct(
-        private ListingService $listingService
+        protected ListingService $listingService
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function getPaginatedList(Request $request): JsonResponse
     {
         try {
+            $data = $this->prepareListData($request);
             $perPage = min($request->get('per_page', 15), 50);
-            $listings = $this->listingService->getFastBrowseListings([], $perPage);
 
-            return $this->successResponse('Listings retrieved successfully', $listings);
-        } catch (\Exception $e) {
+            $listings = $this->listingService->getPaginatedList($data, $perPage);
+
+            return $this->successResponse(
+                'Listings retrieved successfully',
+                BaseResource::collection($listings)
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to retrieve listings', 500);
         }
     }
@@ -32,37 +41,45 @@ class ListingController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $listing = $this->listingService->getListingById($id);
-            return $this->successResponse('Listing retrieved successfully', $listing);
-        } catch (\Exception $e) {
+            $listing = $this->listingService->show($id);
+            return $this->successResponse(
+                'Listing retrieved successfully',
+                new BaseResource($listing->load(['dealer', 'events' => function($query) {
+                    $query->orderBy('created_at', 'desc')->limit(10);
+                }]))
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Listing not found', 404);
         }
     }
 
-    public function fastBrowse(Request $request): JsonResponse
+    public function fastBrowse(ListingFastBrowseRequest $request): JsonResponse
     {
         try {
-            $request->validate([
-                'country' => 'sometimes|string|size:2',
-                'make' => 'sometimes|string|max:100',
-                'model' => 'sometimes|string|max:100',
-                'min_price' => 'sometimes|numeric|min:0',
-                'max_price' => 'sometimes|numeric|min:0',
-                'min_year' => 'sometimes|integer|min:1900|max:' . (date('Y') + 1),
-                'max_year' => 'sometimes|integer|min:1900|max:' . (date('Y') + 1),
-                'city' => 'sometimes|string|max:100',
-                'sort_by' => 'sometimes|in:price,year,mileage,listed_at',
-                'sort_direction' => 'sometimes|in:asc,desc',
-                'per_page' => 'sometimes|integer|min:1|max:50',
-            ]);
+            // Prepare data for the service using the command pattern
+            $data = [
+                'filters' => $request->validated(),
+                'search' => $request->input('search'),
+                'sort' => [
+                    $request->validated('sort_by', 'listed_at') => $request->validated('sort_direction', 'desc')
+                ]
+            ];
+            $perPage = $request->validated('per_page', 15);
 
-            $perPage = $request->get('per_page', 15);
-            $listings = $this->listingService->searchListings($request->all(), $perPage);
+            $listings = $this->listingService->getFastBrowseListings($data, $perPage);
 
-            return $this->successResponse('Fast browse results', $listings);
-        } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors());
-        } catch (\Exception $e) {
+            return $this->successResponse(
+                'Fast browse results',
+                BaseResource::collection($listings)->additional([
+                    'filters_applied' => $request->validated(),
+                    'search_metadata' => [
+                        'total_results' => $listings->total(),
+                        'search_time' => microtime(true) - LARAVEL_START,
+                        'cache_used' => true
+                    ]
+                ])
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to perform search', 500);
         }
     }
@@ -70,51 +87,53 @@ class ListingController extends Controller
     public function popularMakes(Request $request): JsonResponse
     {
         try {
-            $request->validate([
-                'country' => 'sometimes|string|size:2',
-            ]);
+            $request->validate(['country' => 'sometimes|string|size:2']);
 
-            $countryCode = $request->get('country');
-            $makes = $this->listingService->getPopularMakes($countryCode);
+            $data = ['filters' => ['country_code' => $request->get('country')]];
+            $makes = $this->listingService->getPopularMakes($data);
 
-            return $this->successResponse('Popular makes retrieved successfully', $makes);
-        } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors());
-        } catch (\Exception $e) {
+            return $this->successResponse(
+                'Popular makes retrieved successfully',
+                [
+                    'country' => $request->get('country'),
+                    'makes' => $makes,
+                    'total_makes' => count($makes),
+                    'generated_at' => now()->toISOString()
+                ]
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to retrieve popular makes', 500);
         }
     }
 
-    public function updatePrice(Request $request, int $id): JsonResponse
+    public function updatePrice(UpdateListingPriceRequest $request, int $id): JsonResponse
     {
+        $data = $request->validated();
+
         try {
-            $request->validate([
-                'price' => 'required|numeric|min:0',
-            ]);
+            $listing = $this->listingService->updatePrice($id, $data);
 
-            $listing = $this->listingService->updateListingPrice($id, $request->price);
-
-            return $this->successResponse('Listing price updated successfully', $listing);
-        } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors());
-        } catch (\Exception $e) {
+            return $this->successResponse(
+                'Listing price updated successfully',
+                new BaseResource($listing->load('dealer'))
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to update listing price', 500);
         }
     }
 
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(UpdateListingStatusRequest $request, int $id): JsonResponse
     {
+        $data = $request->validated();
+
         try {
-            $request->validate([
-                'status' => 'required|in:active,sold,hidden',
-            ]);
+            $listing = $this->listingService->updateStatus($id, $data);
 
-            $listing = $this->listingService->updateListingStatus($id, $request->status);
-
-            return $this->successResponse('Listing status updated successfully', $listing);
-        } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors());
-        } catch (\Exception $e) {
+            return $this->successResponse(
+                'Listing status updated successfully',
+                new BaseResource($listing->load('dealer'))
+            );
+        } catch (Exception $e) {
             return $this->errorResponse('Failed to update listing status', 500);
         }
     }
