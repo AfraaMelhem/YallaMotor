@@ -4,18 +4,17 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\Services\CacheService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-
 
 class UserService
 {
-    protected $userRepository;
-
-    public function __construct(UserRepositoryInterface $userRepository)
-    {
-        $this->userRepository = $userRepository;
-    }
+    public function __construct(
+        protected UserRepositoryInterface $userRepository,
+        private CacheService $cacheService
+    ) {}
 
 
     public function getPaginatedList(array $data = [], int $perPage = 15)
@@ -25,22 +24,56 @@ class UserService
 
     public function show(int $id)
     {
-        return $this->userRepository->show($id);
+        $cacheKey = "user:{$id}";
+        $tags = ["user:{$id}"];
+
+        return $this->cacheService->remember($cacheKey, $tags, 600, function () use ($id) {
+            return $this->userRepository->show($id);
+        });
+    }
+
+    public function showWithRelations(int $id)
+    {
+        $cacheKey = "user_full:{$id}";
+        $tags = ["user:{$id}"];
+
+        return $this->cacheService->remember($cacheKey, $tags, 600, function () use ($id) {
+            return $this->userRepository->show($id);
+        });
     }
 
     public function create(array $data)
     {
-        return $this->userRepository->create($data);
+        $user = $this->userRepository->create($data);
+
+        // Clear relevant caches
+        Cache::tags(['user_statistics'])->flush();
+
+        return $user;
     }
 
     public function update(int $id, array $data)
     {
-        return $this->userRepository->update($id, $data);
+        $user = $this->userRepository->update($id, $data);
+
+        // Clear relevant caches
+        Cache::forget("user:{$id}");
+        Cache::forget("user_full:{$id}");
+        Cache::tags(['user_statistics'])->flush();
+
+        return $user;
     }
 
     public function delete(int $id): bool
     {
-        return $this->userRepository->delete($id);
+        $result = $this->userRepository->delete($id);
+
+        // Clear relevant caches
+        Cache::forget("user:{$id}");
+        Cache::forget("user_full:{$id}");
+        Cache::tags(['user_statistics'])->flush();
+
+        return $result;
     }
 
 

@@ -33,13 +33,6 @@ class UpdateUserRequest extends FormRequest
             ],
             'phone' => ['required', 'string', 'max:20'],
             'password' => ['nullable', 'string', 'min:6'],
-            'birth_date' => ['nullable', 'date'],
-            'gender' => ['nullable', 'in:male,female,other'],
-            'check_in_date' => ['required', 'date'],
-            'check_out_date' => ['required', 'date', 'after_or_equal:check_in_date'],
-            'actual_check_out_date' => ['nullable', 'date'],
-            'stay_duration_days' => ['nullable', 'integer'],
-            'language' => ['nullable', 'string'],
         ];
     }
 }

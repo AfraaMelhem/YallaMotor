@@ -14,7 +14,6 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable,HasApiTokens,HasRoles, Filterable;
 
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -26,18 +25,6 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
-        'birth_date',
-        'gender',
-        'check_in_date',
-        'check_out_date',
-        'actual_check_out_date',
-        'stay_duration_days',
-        'language',
-        'watch_history',
-        'last_watched_video_id',
-        'is_active',
-        'is_vip',
-        'qrcode_url'
     ];
 
 

@@ -3,53 +3,113 @@
 namespace App\Services;
 
 use App\Repositories\Interfaces\ListingRepositoryInterface;
+use App\Services\CacheService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 
 class ListingService
 {
     public function __construct(
-        private ListingRepositoryInterface $listingRepository
+        private ListingRepositoryInterface $listingRepository,
+        private CacheService $cacheService
     ) {}
 
-    public function getFastBrowseListings(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function getPaginatedList(array $data = [], int $perPage = 15)
     {
-        $cacheKey = $this->generateCacheKey($filters, $perPage);
+        return $this->listingRepository->getPaginatedList($data, $perPage);
+    }
 
-        return Cache::remember($cacheKey, 300, function () use ($filters, $perPage) {
-            return $this->listingRepository
-                ->getFastBrowseData($filters)
-                ->paginate($perPage);
+    public function getFastBrowseListings(array $data = [], int $perPage = 15)
+    {
+        $filters = $data['filters'] ?? [];
+        $cacheKey = $this->generateCacheKey($filters, $perPage);
+        $tags = ['fast_browse', 'cars_list'];
+
+        return $this->cacheService->remember($cacheKey, $tags, 300, function () use ($data, $perPage) {
+            return $this->listingRepository->getPaginatedList($data, $perPage);
         });
     }
 
-    public function getListingById(int $id)
+    public function show(int $id)
     {
         $cacheKey = "listing:{$id}";
+        $tags = ["listing:{$id}"];
 
-        return Cache::remember($cacheKey, 600, function () use ($id) {
+        return $this->cacheService->remember($cacheKey, $tags, 600, function () use ($id) {
             return $this->listingRepository->show($id);
         });
     }
 
-    public function searchListings(array $searchParams, int $perPage = 15): LengthAwarePaginator
+    public function showWithRelations(int $id)
     {
-        $filters = $this->buildFiltersFromSearch($searchParams);
-        return $this->getFastBrowseListings($filters, $perPage);
+        $cacheKey = "listing_full:{$id}";
+        $tags = ["listing:{$id}"];
+
+        return $this->cacheService->remember($cacheKey, $tags, 600, function () use ($id) {
+            return $this->listingRepository->show($id)->load(['dealer', 'events' => function($query) {
+                $query->orderBy('created_at', 'desc')->limit(10);
+            }]);
+        });
     }
 
-    public function getPopularMakes(string $countryCode = null): array
+    public function create(array $data)
     {
+        $listing = $this->listingRepository->create($data);
+
+        // Clear relevant caches
+        Cache::forget('fast_browse:*');
+        Cache::forget('popular_makes:*');
+        Cache::tags(['cars_list', 'facets'])->flush();
+
+        return $listing;
+    }
+
+    public function update(int $id, array $data)
+    {
+        $listing = $this->listingRepository->update($id, $data);
+
+        // Clear relevant caches
+        Cache::forget("listing:{$id}");
+        Cache::forget("listing_full:{$id}");
+        Cache::forget('fast_browse:*');
+        Cache::tags(['cars_list', 'facets'])->flush();
+
+        return $listing;
+    }
+
+    public function delete(int $id): bool
+    {
+        $result = $this->listingRepository->delete($id);
+
+        // Clear relevant caches
+        Cache::forget("listing:{$id}");
+        Cache::forget("listing_full:{$id}");
+        Cache::forget('fast_browse:*');
+        Cache::tags(['cars_list', 'facets'])->flush();
+
+        return $result;
+    }
+
+
+    public function searchListings(array $searchParams, int $perPage = 15)
+    {
+        $data = [
+            'filters' => $this->buildFiltersFromSearch($searchParams),
+            'search' => $searchParams['search'] ?? null,
+            'sort' => $this->buildSortFromSearch($searchParams)
+        ];
+        return $this->getFastBrowseListings($data, $perPage);
+    }
+
+    public function getPopularMakes(array $data = []): array
+    {
+        $countryCode = $data['filters']['country_code'] ?? null;
         $cacheKey = "popular_makes:" . ($countryCode ?: 'all');
+        $tags = ['popular_makes'];
 
-        return Cache::remember($cacheKey, 3600, function () use ($countryCode) {
-            $query = $this->listingRepository->getActiveListing();
-
-            if ($countryCode) {
-                $query->byCountry($countryCode);
-            }
-
-            return $query->selectRaw('make, COUNT(*) as count')
+        return $this->cacheService->remember($cacheKey, $tags, 3600, function () use ($data) {
+            return $this->listingRepository->list($data)
+                ->selectRaw('make, COUNT(*) as count')
                 ->groupBy('make')
                 ->orderBy('count', 'desc')
                 ->limit(20)
@@ -58,23 +118,28 @@ class ListingService
         });
     }
 
-    public function updateListingPrice(int $id, float $newPrice): mixed
+    public function updatePrice(int $id, array $data): mixed
     {
-        $newPriceCents = (int) round($newPrice * 100);
-        $result = $this->listingRepository->updatePrice($id, $newPriceCents);
+        $newPriceCents = (int) round($data['price'] * 100);
 
-        $this->invalidateListingCache($id);
+        // Get the listing first to access its properties
+        $listing = $this->listingRepository->show($id);
 
-        return $result;
+        // Update the price directly - observer will handle event creation
+        $listing->update(['price_cents' => $newPriceCents]);
+
+        return $listing->fresh(['dealer']);
     }
 
-    public function updateListingStatus(int $id, string $newStatus): mixed
+    public function updateStatus(int $id, array $data): mixed
     {
-        $result = $this->listingRepository->updateStatus($id, $newStatus);
+        // Get the listing first to access its properties
+        $listing = $this->listingRepository->show($id);
 
-        $this->invalidateListingCache($id);
+        // Update the status directly - observer will handle event creation
+        $listing->update(['status' => $data['status']]);
 
-        return $result;
+        return $listing->fresh(['dealer']);
     }
 
     private function generateCacheKey(array $filters, int $perPage): string
@@ -131,9 +196,21 @@ class ListingService
         return $filters;
     }
 
-    private function invalidateListingCache(int $id): void
+    private function buildSortFromSearch(array $searchParams): array
     {
-        Cache::forget("listing:{$id}");
-        Cache::flush(); // In production, implement more granular cache invalidation
+        $sort = [];
+
+        if (!empty($searchParams['sort_by'])) {
+            $column = $searchParams['sort_by'];
+            $direction = $searchParams['sort_direction'] ?? 'desc';
+            $sort[$column] = $direction;
+        } else {
+            $sort['listed_at'] = 'desc';
+        }
+
+        return $sort;
     }
+
+
+
 }
