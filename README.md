@@ -25,7 +25,7 @@ A high-performance car marketplace backend built with Laravel 11, featuring adva
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/AfraaMelhem/YallaMotor.git
 cd YallaMotor
 
 # Install dependencies
@@ -86,43 +86,319 @@ GET /api/v1/cars
 
 **Example Request:**
 ```bash
-curl "http://localhost:8000/api/v1/cars?make=Toyota&price_min_cents=1000000&price_max_cents=5000000&include_facets=true"
+curl "http://localhost:8000/api/v1/cars?filters[make]=Volkswagen&include_facets=true&per_page=15
 ```
 
 **Response:**
 ```json
 {
-  "status": "success",
-  "message": "Cars retrieved successfully",
-  "data": {
-    "cars": {
-      "current_page": 1,
-      "data": [
-        {
-          "id": 1,
-          "make": "Toyota",
-          "model": "Camry",
-          "year": 2020,
-          "price": "$25,000",
-          "country_code": "US",
-          "city": "New York",
-          "dealer": {
-            "id": 1,
-            "name": "ABC Motors"
-          }
+    "status": "success",
+    "message": "Cars retrieved successfully",
+    "data": {
+        "data": [
+            {
+                "id": 19,
+                "dealer_id": 3,
+                "make": "Volkswagen",
+                "model": "Tiguan",
+                "year": 2022,
+                "mileage_km": 91284,
+                "country_code": "US",
+                "city": "Philadelphia",
+                "status": "active",
+                "listed_at": "2025-03-30T00:43:41.000000Z",
+                "price": 12430.07,
+                "price_formatted": "$12,430.07",
+                "mileage_miles": 56721.23,
+                "age_years": 3,
+                "status_color": "green"
+            },
+            {
+                "id": 21,
+                "dealer_id": 4,
+                "make": "Volkswagen",
+                "model": "Atlas",
+                "year": 2020,
+                "mileage_km": 122316,
+                "country_code": "FR",
+                "city": "New York",
+                "status": "active",
+                "listed_at": "2025-06-19T00:29:00.000000Z",
+                "price": 43621.28,
+                "price_formatted": "$43,621.28",
+                "mileage_miles": 76003.62,
+                "age_years": 5,
+                "status_color": "green"
+            },
+            {
+                "id": 25,
+                "dealer_id": 4,
+                "make": "Volkswagen",
+                "model": "Jetta",
+                "year": 2021,
+                "mileage_km": 113877,
+                "country_code": "FR",
+                "city": "Dallas",
+                "status": "active",
+                "listed_at": "2025-06-21T17:40:27.000000Z",
+                "price": 41371.02,
+                "price_formatted": "$41,371.02",
+                "mileage_miles": 70759.87,
+                "age_years": 4,
+                "status_color": "green"
+            },
+            {
+                "id": 38,
+                "dealer_id": 5,
+                "make": "Volkswagen",
+                "model": "Golf",
+                "year": 2019,
+                "mileage_km": 93994,
+                "country_code": "SA",
+                "city": "Los Angeles",
+                "status": "hidden",
+                "listed_at": "2025-03-23T20:38:57.000000Z",
+                "price": 52611.8,
+                "price_formatted": "$52,611.80",
+                "mileage_miles": 58405.15,
+                "age_years": 6,
+                "status_color": "gray"
+            },
+            {
+                "id": 46,
+                "dealer_id": 6,
+                "make": "Volkswagen",
+                "model": "Golf",
+                "year": 2010,
+                "mileage_km": 195611,
+                "country_code": "SA",
+                "city": "Berlin",
+                "status": "hidden",
+                "listed_at": "2025-04-18T23:57:28.000000Z",
+                "price": 36993.05,
+                "price_formatted": "$36,993.05",
+                "mileage_miles": 121547,
+                "age_years": 15,
+                "status_color": "gray"
+            },
+            {
+                "id": 52,
+                "dealer_id": 7,
+                "make": "Volkswagen",
+                "model": "Passat",
+                "year": 2014,
+                "mileage_km": 177623,
+                "country_code": "CA",
+                "city": "Paris",
+                "status": "active",
+                "listed_at": "2025-07-09T14:17:21.000000Z",
+                "price": 66821.5,
+                "price_formatted": "$66,821.50",
+                "mileage_miles": 110369.78,
+                "age_years": 11,
+                "status_color": "green"
+            },
+            {
+                "id": 65,
+                "dealer_id": 8,
+                "make": "Volkswagen",
+                "model": "Golf",
+                "year": 2024,
+                "mileage_km": 119287,
+                "country_code": "AU",
+                "city": "Los Angeles",
+                "status": "active",
+                "listed_at": "2025-04-15T00:35:22.000000Z",
+                "price": 33859.18,
+                "price_formatted": "$33,859.18",
+                "mileage_miles": 74121.48,
+                "age_years": 1,
+                "status_color": "green"
+            },
+            {
+                "id": 77,
+                "dealer_id": 9,
+                "make": "Volkswagen",
+                "model": "Tiguan",
+                "year": 2021,
+                "mileage_km": 126725,
+                "country_code": "AE",
+                "city": "Phoenix",
+                "status": "active",
+                "listed_at": "2025-06-14T04:59:07.000000Z",
+                "price": 57947.42,
+                "price_formatted": "$57,947.42",
+                "mileage_miles": 78743.24,
+                "age_years": 4,
+                "status_color": "green"
+            },
+            {
+                "id": 87,
+                "dealer_id": 11,
+                "make": "Volkswagen",
+                "model": "Passat",
+                "year": 2012,
+                "mileage_km": 13689,
+                "country_code": "AU",
+                "city": "San Jose",
+                "status": "active",
+                "listed_at": "2025-08-13T00:20:44.000000Z",
+                "price": 57666.92,
+                "price_formatted": "$57,666.92",
+                "mileage_miles": 8505.95,
+                "age_years": 13,
+                "status_color": "green"
+            },
+            {
+                "id": 93,
+                "dealer_id": 12,
+                "make": "Volkswagen",
+                "model": "Jetta",
+                "year": 2017,
+                "mileage_km": 39057,
+                "country_code": "CA",
+                "city": "Berlin",
+                "status": "active",
+                "listed_at": "2025-08-27T10:03:30.000000Z",
+                "price": 30234.29,
+                "price_formatted": "$30,234.29",
+                "mileage_miles": 24268.89,
+                "age_years": 8,
+                "status_color": "green"
+            },
+            {
+                "id": 96,
+                "dealer_id": 12,
+                "make": "Volkswagen",
+                "model": "Passat",
+                "year": 2021,
+                "mileage_km": 111169,
+                "country_code": "CA",
+                "city": "Houston",
+                "status": "active",
+                "listed_at": "2025-08-17T11:55:41.000000Z",
+                "price": 61565.23,
+                "price_formatted": "$61,565.23",
+                "mileage_miles": 69077.19,
+                "age_years": 4,
+                "status_color": "green"
+            },
+            {
+                "id": 99,
+                "dealer_id": 12,
+                "make": "Volkswagen",
+                "model": "Atlas",
+                "year": 2011,
+                "mileage_km": 66441,
+                "country_code": "CA",
+                "city": "Chicago",
+                "status": "active",
+                "listed_at": "2025-09-05T07:35:31.000000Z",
+                "price": 32000.75,
+                "price_formatted": "$32,000.75",
+                "mileage_miles": 41284.51,
+                "age_years": 14,
+                "status_color": "green"
+            },
+            {
+                "id": 100,
+                "dealer_id": 12,
+                "make": "Volkswagen",
+                "model": "Atlas",
+                "year": 2024,
+                "mileage_km": 158999,
+                "country_code": "CA",
+                "city": "Riyadh",
+                "status": "hidden",
+                "listed_at": "2025-04-26T06:11:17.000000Z",
+                "price": 58101.35,
+                "price_formatted": "$58,101.35",
+                "mileage_miles": 98797.37,
+                "age_years": 1,
+                "status_color": "gray"
+            },
+            {
+                "id": 102,
+                "dealer_id": 12,
+                "make": "Volkswagen",
+                "model": "Tiguan",
+                "year": 2023,
+                "mileage_km": 153683,
+                "country_code": "CA",
+                "city": "San Antonio",
+                "status": "active",
+                "listed_at": "2025-04-02T14:26:02.000000Z",
+                "price": 24516.44,
+                "price_formatted": "$24,516.44",
+                "mileage_miles": 95494.16,
+                "age_years": 2,
+                "status_color": "green"
+            },
+            {
+                "id": 107,
+                "dealer_id": 13,
+                "make": "Volkswagen",
+                "model": "Atlas",
+                "year": 2018,
+                "mileage_km": 257,
+                "country_code": "SA",
+                "city": "Paris",
+                "status": "active",
+                "listed_at": "2025-06-12T15:36:22.000000Z",
+                "price": 40252.3,
+                "price_formatted": "$40,252.30",
+                "mileage_miles": 159.69,
+                "age_years": 7,
+                "status_color": "green"
+            }
+        ],
+        "meta": {
+            "pagination": {
+                "current_page": 1,
+                "per_page": 15,
+                "total": 43,
+                "last_page": 3,
+                "from": 1,
+                "to": 15
+            },
+            "filters_applied": {
+                "make": "Volkswagen"
+            },
+            "query_time_ms": 44.2
+        },
+        "facets": {
+            "makes": {
+                "BMW": 34,
+                "Toyota": 33,
+                "Volkswagen": 30,
+                "Honda": 26,
+                "Mercedes": 26,
+                "Audi": 25,
+                "Nissan": 24,
+                "Ford": 24,
+                "Kia": 21,
+                "Hyundai": 18
+            },
+            "years": {
+                "2024": 24,
+                "2023": 20,
+                "2022": 20,
+                "2021": 22,
+                "2020": 14,
+                "2019": 13,
+                "2018": 17,
+                "2017": 20,
+                "2016": 9,
+                "2015": 14,
+                "2014": 13,
+                "2013": 18,
+                "2012": 15,
+                "2011": 24,
+                "2010": 18
+            }
         }
-      ],
-      "total": 45,
-      "per_page": 20
     },
-    "facets": {
-      "makes": [{"value": "Toyota", "count": 15}],
-      "models": [{"value": "Camry", "count": 8}],
-      "years": [{"value": "2020", "count": 12}],
-      "countries": [{"value": "US", "count": 30}]
-    }
-  },
-  "correlation_id": "req_abc123"
+    "correlation_id": "req_68cc982e51b14"
 }
 ```
 
@@ -334,39 +610,70 @@ Responses include observability headers:
 
 ### Scoring Algorithm
 
-Leads are automatically scored (0-100) based on:
+Leads are automatically scored (0-100) based on **4 key factors**:
 
-**Email Quality (0-25 points):**
-- Valid format: 5 points
-- Known domains (gmail, yahoo): 10 points
-- Corporate domains: 20 points
-- Custom validation rules
+**Email Quality (20 points):**
+- ✅ Valid email format: 20 points
+- ❌ Invalid format: 0 points
+- Validates using PHP's `FILTER_VALIDATE_EMAIL`
 
-**Phone Quality (0-20 points):**
-- Valid format: 10 points
-- International format: +10 points
-- Mobile vs landline detection
+**Phone Quality (30 points):**
+- ✅ Valid phone (≥10 digits): 30 points
+- ❌ Invalid/short phone: 0 points
+- Supports international formats (+country codes)
+- Automatically cleans special characters (keeps only digits and +)
 
-**Message Analysis (0-30 points):**
-- Length and detail: 5-15 points
-- Intent keywords (buy, purchase, financing): +15 points
-- Quality indicators
+**Source Attribution (10 points):**
+- ✅ Any valid source: 10 points
+- ❌ Empty source: 0 points
+- Supported sources: `api`, `website`, `mobile`, `social`
 
-**Listing Context (0-15 points):**
-- High-value listings: +10 points
-- Recent listings: +5 points
-- Dealer reputation factors
-
-**Behavioral Signals (0-10 points):**
-- Business hours submission: +5 points
-- Source quality (website > api): +5 points
-- Duplicate detection: -20 points
+**Listing Recency (40 points):**
+- ≤1 day old: 40 points
+- ≤7 days old: 30 points
+- ≤30 days old: 20 points
+- ≤90 days old: 10 points
+- >90 days old: 0 points
 
 ### Status Assignment
 
-- **0-39**: `new` - Basic lead
-- **40-69**: `qualified` - Good potential
-- **70-100**: `hot` - High priority
+- **≥80 points**: `qualified` - High priority lead
+- **<80 points**: `new` - Standard lead processing
+
+### Example Scoring
+
+```json
+{
+  "score": 90,
+  "suggested_status": "qualified",
+  "scoring_data": {
+    "email": {
+      "score": 20,
+      "details": {"valid_format": true}
+    },
+    "phone": {
+      "score": 30,
+      "details": {
+        "cleaned": "+1234567890",
+        "valid_format": true
+      }
+    },
+    "source": {
+      "score": 10,
+      "details": {"source": "website"}
+    },
+    "recency": {
+      "score": 30,
+      "details": {
+        "listing_id": 123,
+        "days_since_listed": 5,
+        "listed_at": "2024-01-15T10:00:00Z"
+      }
+    }
+  },
+  "scored_at": "2024-01-20T14:30:00Z"
+}
+```
 
 ### Background Processing
 
@@ -381,28 +688,115 @@ Lead scoring runs asynchronously via queues to maintain API performance.
 php artisan test
 
 # Run specific test suites
-php artisan test tests/Feature/CarsApiTest.php
-php artisan test tests/Unit/LeadScoringServiceTest.php
+php artisan test --testsuite=Unit
+php artisan test --testsuite=Feature
+
+# Run specific test files
+php artisan test tests/Feature/API/CarControllerTest.php
+php artisan test tests/Feature/API/LeadControllerTest.php
+php artisan test tests/Feature/API/CacheInvalidationTest.php
+php artisan test tests/Unit/Services/LeadScoringServiceTest.php
 
 # Run with coverage
 php artisan test --coverage
 ```
 
-### Test Coverage
+### Comprehensive Test Suite
 
-**Feature Tests:**
-- Cars API filtering and pagination
-- Cache HIT/MISS behavior
-- Lead submission and validation
-- Rate limiting
-- Admin cache management
-- Error handling and correlation IDs
+The application includes a complete test suite with **64 tests** covering all critical functionality:
 
-**Unit Tests:**
-- Lead scoring algorithm
-- Cache service functionality
-- Data transformation
-- Validation rules
+#### **Feature Tests (46 tests)**
+
+**Cars API Tests (`CarControllerTest.php`):**
+- ✅ Paginated car listings with filtering
+- ✅ Filter by make, year range, price range
+- ✅ Faceted navigation with make/year counts
+- ✅ Cache HIT/MISS behavior verification
+- ✅ ETag support and 304 Not Modified responses
+- ✅ Search functionality across make/model
+- ✅ Sorting by price, date, etc.
+- ✅ Per-page limits and validation
+- ✅ Popular makes endpoint with country filtering
+- ✅ Individual car details with relationships
+- ✅ Error handling for invalid parameters
+
+**Leads API Tests (`LeadControllerTest.php`):**
+- ✅ Lead creation happy path
+- ✅ Rate limiting (5 requests per IP+email/hour)
+- ✅ Data validation (email format, phone, required fields)
+- ✅ Data normalization (email lowercase, phone cleaning)
+- ✅ Listing validation (exists, active status)
+- ✅ Request metadata capture (IP, User-Agent)
+- ✅ Background job dispatch for lead scoring
+- ✅ Source defaulting and validation
+- ✅ Separate rate limits for different emails
+- ✅ Comprehensive validation error scenarios
+
+**Cache Invalidation Tests (`CacheInvalidationTest.php`):**
+- ✅ Car list cache invalidation on listing updates
+- ✅ Individual car cache invalidation
+- ✅ Popular makes cache updates on make changes
+- ✅ Country-specific cache invalidation
+- ✅ Filtered query cache invalidation
+- ✅ Facet cache updates
+- ✅ Status change cache invalidation
+- ✅ Price update cache invalidation
+- ✅ ETag regeneration on data changes
+- ✅ Separate cache handling for different filters
+
+#### **Unit Tests (18 tests)**
+
+**Lead Scoring Service Tests (`LeadScoringServiceTest.php`):**
+- ✅ Email validation scoring (20 points for valid format)
+- ✅ Phone validation scoring (30 points for valid format)
+- ✅ International phone number support
+- ✅ Phone number cleaning (removes special characters)
+- ✅ Source attribution scoring (10 points)
+- ✅ Listing recency scoring (up to 40 points)
+- ✅ Total score calculation and aggregation
+- ✅ Status suggestion based on score thresholds:
+  - 80+ points → "qualified"
+  - <80 points → "new"
+- ✅ Edge cases and boundary conditions
+- ✅ Timestamp generation for scoring events
+- ✅ Detailed scoring breakdown for audit trails
+- ✅ Relationship handling with listings
+- ✅ Input validation and error handling
+
+### Test Configuration
+
+**Test Environment Setup:**
+```php
+// phpunit.xml configuration
+- Database: SQLite in-memory
+- Cache: Array driver (no Redis dependency)
+- Queue: Sync driver (immediate execution)
+- Mail: Array driver (no email sending)
+```
+
+**Test Data Management:**
+- Factory-based test data generation
+- Database transactions for isolation
+- Cache clearing between tests
+- Rate limit clearing for consistent testing
+
+### Test Quality Assurance
+
+**Coverage Areas:**
+- ✅ **API Endpoints**: All public endpoints tested
+- ✅ **Business Logic**: Lead scoring, filtering, pagination
+- ✅ **Caching**: HIT/MISS scenarios, invalidation patterns
+- ✅ **Validation**: Input validation, data normalization
+- ✅ **Security**: Rate limiting, API key authentication
+- ✅ **Performance**: Query optimization, cache efficiency
+- ✅ **Error Handling**: Graceful degradation, proper status codes
+- ✅ **Integration**: Service layer interactions, job dispatching
+
+**Key Test Insights:**
+- **Lead Scoring Bug Detected**: Date comparison logic issue where `diffInDays()` returns negative values for past dates
+- **Cache Performance**: Verified cache key generation and invalidation strategies
+- **Rate Limiting**: Confirmed proper throttling per IP+email combination
+- **Data Integrity**: Validated all input sanitization and normalization
 
 ### Performance Testing
 
@@ -413,7 +807,7 @@ The API is designed for P95 ≤ 400ms response times:
 curl -w "@curl-format.txt" "http://localhost:8000/api/v1/cars"
 
 # Test with various filters
-curl -w "@curl-format.txt" "http://localhost:8000/api/v1/cars?make=Toyota&country=US&include_facets=true"
+curl -w "@curl-format.txt" "http://localhost:8000/api/v1/cars?filters[make]=Toyota&filters[country_code]=US&include_facets=true"
 ```
 
 ## Security
@@ -422,7 +816,7 @@ curl -w "@curl-format.txt" "http://localhost:8000/api/v1/cars?make=Toyota&countr
 
 Admin endpoints use header-based API key authentication:
 ```http
-X-Api-Key: your-secure-admin-key
+X-Api-Key: ADMIN_API_KEY
 ```
 
 ### Rate Limiting
@@ -590,24 +984,6 @@ php artisan view:cache
 # Warm up application cache
 curl -H "Cache-Control: no-cache" "https://your-domain.com/api/v1/cars"
 ```
-
-## API Documentation
-
-### OpenAPI Specification
-
-The API follows OpenAPI 3.0 standards. Generate documentation:
-
-```bash
-php artisan l5-swagger:generate
-```
-
-Access at: `http://localhost:8000/api/documentation`
-
-### Postman Collection
-
-Import the included Postman collection for easy API testing:
-- Collection: `docs/YallaMotor-API.postman_collection.json`
-- Environment: `docs/YallaMotor-Local.postman_environment.json`
 
 ## Support
 
